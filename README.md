@@ -1,7 +1,7 @@
 # dice-game
 
-## Execução
 ```bash
-ghci Main.hs
+stack build
+stack ghci
 main
 ```
