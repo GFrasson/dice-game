@@ -3,9 +3,9 @@ module Game (startGame) where
 -- import Control.Monad.State
 -- import Data.Functor.Identity
 
-import Die (Die, rollDice, rotateDie, removeDie, getFace, possibleRotations)
+import Die (Die (..), rollDice, rotateDie, removeDie, getFace, possibleRotations)
 import Text.Read (readMaybe)
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, isJust, isNothing)
 
 data Player = Person | Computer deriving (Show, Eq)
 data Move = Rotate | Remove deriving (Show, Eq)
@@ -40,6 +40,8 @@ rotateDieInState oldFace newFace (GameState dice player) =
 removeDieInState :: GameState -> GameState
 removeDieInState (GameState dice player) = GameState (removeDie dice) (togglePlayer player)
 
+isDieOnTable :: Die -> GameState -> Bool
+isDieOnTable (Die dieFace) (GameState dice _) = dieFace `elem` map getFace dice
 
 readDiceAmount :: IO Int
 readDiceAmount = do
@@ -47,10 +49,46 @@ readDiceAmount = do
   diceAmountInput <- getLine
   let diceAmount = readMaybe diceAmountInput :: Maybe Int
 
-  if diceAmount == Nothing then
-    readDiceAmount
+  maybe readDiceAmount return diceAmount
+
+readValidDieChoice :: GameState -> IO Die
+readValidDieChoice gameState = do
+  die <- readDieChoice
+
+  if not $ isDieOnTable die gameState then do
+    putStrLn $ "O dado de face " ++ show (getFace die) ++ " nao esta na mesa."
+    readValidDieChoice gameState
   else
-    return (fromJust diceAmount)
+    return die
+
+readDieChoice :: IO Die
+readDieChoice = do
+  putStrLn "Digite a face do dado com o qual deseja interagir:"
+  dieFaceInput <- getLine
+  let dieFace = readMaybe dieFaceInput :: Maybe Int
+
+  maybe readDieChoice (\face -> return (Die face)) dieFace
+
+readValidFaceRotationChoice :: Die -> GameState -> IO Int
+readValidFaceRotationChoice die gameState = do
+  printPossibleRotations die
+  newFace <- readFaceRotationChoice
+
+  let rotations = possibleRotations die
+
+  if newFace `notElem` rotations then do
+    putStrLn $ "Nao eh possivel rotacionar o dado de face " ++ show (getFace die) ++ " para a face " ++ show newFace
+    readValidFaceRotationChoice die gameState
+  else
+    return newFace
+
+readFaceRotationChoice :: IO Int
+readFaceRotationChoice = do
+  putStrLn "Digite a nova face do dado para rotaciona-lo:"
+  newDieFaceInput <- getLine
+  let newDieFace = readMaybe newDieFaceInput :: Maybe Int
+
+  maybe readFaceRotationChoice return newDieFace
 
 startGame :: IO ()
 startGame = do
@@ -62,13 +100,13 @@ startGame = do
   let gameState = initGameState randomDice
   gameEventLoop gameState
 
+gameEventLoop :: GameState -> IO ()
 gameEventLoop (GameState dice player) = do
   -- Verify End Game
   endGame <- verifyEndGame (GameState dice player)
-  
-  if endGame 
+  if endGame
     then putStrLn ("=== Fim de jogo! ====\n  =" ++ show player ++ " venceu! =" ++ "\n=====================")
-  
+
   else do
     if player == Person
       then do
@@ -76,25 +114,20 @@ gameEventLoop (GameState dice player) = do
 
         mapM_ printPossibleRotations dice
 
-        -- Show possible moves
-      
-        putStrLn "Escolha uma jogada:"
+        selectedDie <- readValidDieChoice (GameState dice player)
+        newFace <- readValidFaceRotationChoice selectedDie (GameState dice player)
 
-        -- Show Dice
-      
-        putStrLn "Escolha um dado:"
+        let newGameState = rotateDieInState (getFace selectedDie) newFace (GameState dice player)
 
-        -- Show possible rotations
-
-        putStrLn "Escolha a nova face para cima:"
+        putStrLn $ "Dados: " ++ show (map getFace (diceTable newGameState))
+        
+        gameEventLoop newGameState
 
     else do
       putStrLn "Vez do Computador"
 
-    -- Update GameState
-    --gameEventLoop (GameState dice player)
-
 -- Função para imprimir o estado atual do jogo
+printGameState :: GameState -> IO ()
 printGameState (GameState dice player) = do
   let faces = map getFace dice
   putStrLn $ "Dados: " ++ show faces
@@ -109,8 +142,4 @@ printPossibleRotations die = do
 
 -- Função para verificar se o jogo terminou
 verifyEndGame :: GameState -> IO Bool
-verifyEndGame (GameState dice _) = return $ listLength dice == 0
-
--- Usando length para obter o comprimento de uma lista
-listLength :: [a] -> Int
-listLength lst = length lst
+verifyEndGame (GameState dice _) = return $ length dice == 0

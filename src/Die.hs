@@ -1,4 +1,4 @@
-module Die (Die, rollDice, possibleRotations, oppositeFace, rotateDie, removeDie, getFace) where
+module Die (Die (..), rollDice, possibleRotations, oppositeFace, rotateDie, removeDie, getFace) where
 import System.Random (randomRIO)
 
 data Die = Die Int deriving Show
@@ -31,11 +31,11 @@ rotateDie oldFace newFace (x:xs)
   | getFace x == oldFace = Die newFace : xs
   | otherwise = x : rotateDie oldFace newFace xs
   
-rotateDieByIndex :: Int -> Int -> [Die] -> [Die]
-rotateDieByIndex _ _ [] = []
-rotateDieByIndex dieIndex newFace (x:xs)
-  | dieIndex == 0 = Die newFace:xs
-  | otherwise = x:rotateDieByIndex (dieIndex - 1) newFace xs
+-- rotateDieByIndex :: Int -> Int -> [Die] -> [Die]
+-- rotateDieByIndex _ _ [] = []
+-- rotateDieByIndex dieIndex newFace (x:xs)
+--   | dieIndex == 0 = Die newFace:xs
+--   | otherwise = x:rotateDieByIndex (dieIndex - 1) newFace xs
 
 removeDie :: [Die] -> [Die]
 removeDie [] = []
