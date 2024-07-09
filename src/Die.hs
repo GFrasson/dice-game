@@ -1,7 +1,29 @@
 module Die (Die (..), rollDice, possibleRotations, oppositeFace, rotateDie, removeDie, getFace) where
 import System.Random (randomRIO)
 
-data Die = Die Int deriving Show
+data Die = Die Int
+
+instance Show Die where
+  show (Die face) = faceToString face
+
+faceToString :: Int -> String
+faceToString face = let
+  top = " ---------\n"
+  firstRow
+    | face == 1 = "|         |\n"
+    | face == 2 || face == 3 = "|  o      |\n"
+    | otherwise = "|  o   o  |\n"
+  secondRow
+    | face == 6 = "|  o   o  |\n"
+    | even face = "|         |\n"
+    | otherwise = "|    o    |\n"
+  thirdRow
+    | face == 1 = "|         |\n"
+    | face == 2 || face == 3 = "|      o  |\n"
+    | otherwise = "|  o   o  |\n"
+  bottom = " ---------"
+
+  in top ++ firstRow ++ secondRow ++ thirdRow ++ bottom
 
 getFace :: Die -> Int
 getFace (Die face) = face

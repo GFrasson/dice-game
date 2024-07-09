@@ -115,12 +115,17 @@ gameEventLoop (GameState dice player) = do
         mapM_ printPossibleRotations dice
 
         selectedDie <- readValidDieChoice (GameState dice player)
+
+        putStrLn $ show selectedDie
+
         newFace <- readValidFaceRotationChoice selectedDie (GameState dice player)
 
         let newGameState = rotateDieInState (getFace selectedDie) newFace (GameState dice player)
 
-        putStrLn $ "Dados: " ++ show (map getFace (diceTable newGameState))
-        
+        -- putStrLn $ "Dados: " ++ show (map getFace (diceTable newGameState))
+
+        printDice $ diceTable newGameState
+
         gameEventLoop newGameState
 
     else do
@@ -129,9 +134,16 @@ gameEventLoop (GameState dice player) = do
 -- Função para imprimir o estado atual do jogo
 printGameState :: GameState -> IO ()
 printGameState (GameState dice player) = do
+  printDice dice
+  putStrLn $ "Jogador atual: " ++ show player ++ "\n"
+
+printDice :: [Die] -> IO ()
+printDice dice = do
   let faces = map getFace dice
   putStrLn $ "Dados: " ++ show faces
-  putStrLn $ "Jogador atual: " ++ show player
+
+  mapM_ (\die -> putStrLn (show die ++ "\n")) dice
+ 
 
 -- Função para imprimir as rotações possíveis para um dado
 printPossibleRotations :: Die -> IO ()
