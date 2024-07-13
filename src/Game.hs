@@ -109,6 +109,17 @@ handleOtherFacesPerson selectedDie gameState = do
   newFace <- readValidFaceRotationChoice selectedDie gameState
   return $ rotateDieInState (getFace selectedDie) newFace gameState
 
+handleComputerMove :: Die -> GameState -> IO GameState
+handleComputerMove selectedDie gameState = do
+  if getFace selectedDie == 1
+    then handleFaceOneComputer gameState
+    else handleOtherFacesComputer selectedDie gameState
+
+handleFaceOneComputer :: GameState -> IO GameState
+handleFaceOneComputer gameState = do
+  putStrLn "O computador removeu um dado de face 1."
+  return $ removeDieInState gameState
+
 handleOtherFacesComputer :: Die -> GameState -> IO GameState
 handleOtherFacesComputer selectedDie gameState = do
   let possibleRotationsList = possibleRotations selectedDie
@@ -117,17 +128,9 @@ handleOtherFacesComputer selectedDie gameState = do
   let randomFace = possibleRotationsList !! randomIndex
   return $ rotateDieInState (getFace selectedDie) randomFace gameState
 
-handleComputerMove :: Die -> GameState -> IO GameState
-handleComputerMove selectedDie gameState = do
-  if getFace selectedDie == 1 then do
-    putStrLn "O computador removeu um dado."
-    return $ removeDieInState gameState
-  else
-    handleOtherFacesComputer selectedDie gameState
-
--- handleFaceOneComputer
-
--- chooseComputerMove :: GameState -> IO ()
+getComputerMove :: Difficulty -> (GameState -> IO GameState)
+getComputerMove Easy = computerEasyMove
+getComputerMove Hard = computerHardMove
 
 computerEasyMove :: GameState -> IO GameState
 computerEasyMove (GameState dice player difficulty) = do
@@ -135,7 +138,10 @@ computerEasyMove (GameState dice player difficulty) = do
   let selectedDie = dice !! randomIndex
   handleComputerMove selectedDie (GameState dice player difficulty)
 
--- computerHardMove :: GameState -> IO ()
+computerHardMove :: GameState -> IO GameState
+computerHardMove (GameState dice player difficulty) = do
+  let selectedDie = dice !! 0
+  handleComputerMove selectedDie (GameState dice player difficulty)
 
 startGame :: IO ()
 startGame = do
@@ -170,9 +176,10 @@ gameEventLoop (GameState dice player difficulty) = do
 
     else do
       putStrLn "Vez do Computador"
+      
+      let computerMove = getComputerMove difficulty
+      newGameState <- computerMove (GameState dice player difficulty)
 
-      newGameState <- computerEasyMove (GameState dice player difficulty)
-      -- handleComputerMove (GameState dice player difficulty)
       printDice $ diceTable newGameState
       gameEventLoop newGameState
       
