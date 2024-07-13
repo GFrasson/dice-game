@@ -13,8 +13,8 @@ data GameState = GameState {
   currentDifficulty :: Difficulty
 }
 
-initGameState :: [Die] -> GameState
-initGameState randomDice = GameState { diceTable = randomDice, currentPlayer = Person, currentDifficulty = Easy }
+initGameState :: [Die] -> Difficulty -> GameState
+initGameState randomDice difficulty = GameState { diceTable = randomDice, currentPlayer = Person, currentDifficulty = difficulty }
 
 rotateDieInState :: Int -> Int -> GameState -> GameState
 rotateDieInState oldFace newFace (GameState dice player difficulty) =
@@ -38,6 +38,22 @@ readDiceAmount = do
   let diceAmount = readMaybe diceAmountInput :: Maybe Int
 
   maybe readDiceAmount return diceAmount
+
+readDifficulty :: IO Difficulty
+readDifficulty = do
+  putStrLn "[1] Facil"
+  putStrLn "[2] Dificil"
+  putStrLn "Escolha uma dificuldade:"
+  difficultyOptionInput <- getLine
+  let difficultyOption = readMaybe difficultyOptionInput :: Maybe Int
+  let difficultyMaybe = getDifficultyFromOption difficultyOption
+
+  maybe readDifficulty return difficultyMaybe
+
+getDifficultyFromOption :: Maybe Int -> Maybe Difficulty
+getDifficultyFromOption (Just 1) = Just Easy
+getDifficultyFromOption (Just 2) = Just Hard
+getDifficultyFromOption _ = Nothing
 
 readValidDieChoice :: GameState -> IO Die
 readValidDieChoice gameState = do
@@ -127,8 +143,10 @@ startGame = do
 
   diceAmount <- readDiceAmount
   randomDice <- rollDice diceAmount
+  
+  difficulty <- readDifficulty
 
-  let gameState = initGameState randomDice
+  let gameState = initGameState randomDice difficulty
   gameEventLoop gameState
 
 gameEventLoop :: GameState -> IO ()
