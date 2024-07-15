@@ -3,6 +3,7 @@ module Game (startGame) where
 import Die (Die (..), rollDice, rotateDie, removeDie, getFace, possibleRotations)
 import Text.Read (readMaybe)
 import System.Random (randomRIO)
+import System.Console.ANSI
 
 data Player = Person | Computer deriving (Show, Eq)
 data Difficulty = Easy | Hard deriving (Show, Eq)
@@ -124,8 +125,8 @@ handleOtherFacesComputer :: Die -> GameState -> IO GameState
 handleOtherFacesComputer selectedDie gameState = do
   let possibleRotationsList = possibleRotations selectedDie
   randomIndex <- randomRIO (0, length possibleRotationsList - 1)
-  putStrLn $ "O computador rotacionou um dado de face " ++ show (getFace selectedDie)
   let randomFace = possibleRotationsList !! randomIndex
+  putStrLn $ "O computador rotacionou um dado de face " ++ show (getFace selectedDie) ++ " para a face " ++ show (randomFace)
   return $ rotateDieInState (getFace selectedDie) randomFace gameState
 
 getComputerMove :: Difficulty -> (GameState -> IO GameState)
@@ -163,42 +164,41 @@ gameEventLoop (GameState dice player difficulty) = do
     then putStrLn ("=== Fim de jogo! ====\n  =" ++ show (togglePlayer player) ++ " venceu! =" ++ "\n=====================")
 
   else do
+    printGameState (GameState dice player difficulty)
     if player == Person
       then do
-        printGameState (GameState dice player difficulty)
+        setSGR [SetColor Foreground Vivid Green]
 
         selectedDie <- readValidDieChoice (GameState dice player difficulty)
         putStrLn $ show selectedDie
 
         newGameState <- handlePersonMove selectedDie (GameState dice player difficulty)
-        printDice $ diceTable newGameState
         gameEventLoop newGameState
 
     else do
+      setSGR [SetColor Foreground Vivid Red]
       putStrLn "Vez do Computador"
       
       let computerMove = getComputerMove difficulty
       newGameState <- computerMove (GameState dice player difficulty)
 
-      printDice $ diceTable newGameState
+      putStrLn "O computador finalizou a sua jogada."
       gameEventLoop newGameState
       
-      putStrLn "O computador finalizou a sua jogada."
 
 
 -- Função para imprimir o estado atual do jogo
 printGameState :: GameState -> IO ()
-printGameState (GameState dice player _) = do
+printGameState (GameState dice _ _) = do
+  setSGR [SetColor Foreground Dull Yellow]
   printDiceWithRotations dice
-  putStrLn $ "Jogador atual: " ++ show player ++ "\n"
-  putStrLn $ "======================================================\n"
 
-printDice :: [Die] -> IO ()
-printDice dice = do
-  let faces = map getFace dice
-  putStrLn $ "Dados: " ++ show faces
-
-  mapM_ (\die -> putStrLn (show die ++ "\n")) dice
+--printDice :: [Die] -> IO ()
+--printDice dice = do
+--  let faces = map getFace dice
+--  putStrLn $ "Dados: " ++ show faces
+--
+--  mapM_ (\die -> putStrLn (show die ++ "\n")) dice
 
 printDiceWithRotations :: [Die] -> IO ()
 printDiceWithRotations dice = do
