@@ -4,6 +4,11 @@ import Die (Die (..), rollDice, rotateDie, removeDie, getFace, possibleRotations
 import Text.Read (readMaybe)
 import System.Random (randomRIO)
 import System.Console.ANSI
+    ( setSGR,
+      Color(Yellow, Green, Red),
+      ColorIntensity(Dull, Vivid),
+      ConsoleLayer(Foreground),
+      SGR(SetColor) )
 
 data Player = Person | Computer deriving (Show, Eq)
 data Difficulty = Easy | Hard deriving (Show, Eq)
@@ -141,8 +146,47 @@ computerEasyMove (GameState dice player difficulty) = do
 
 computerHardMove :: GameState -> IO GameState
 computerHardMove (GameState dice player difficulty) = do
-  let selectedDie = dice !! 0
-  handleComputerMove selectedDie (GameState dice player difficulty)
+  let faces = foldl (\acc current -> [(map getFace current)] ++ acc) [] (getPossibleConfigurations dice)
+  putStrLn $ "Dados: " ++ show faces
+  
+  let bestComputerConfigurations = filter (\configuration -> not $ isWinnerConfiguration configuration) (getPossibleConfigurations dice)
+  let best = foldl (\acc current -> [(map getFace current)] ++ acc) [] (bestComputerConfigurations)
+  putStrLn $ "Dados: " ++ show best
+
+  if null bestComputerConfigurations then
+    computerEasyMove (GameState dice player difficulty)
+  else do
+    let chosenComputerConfiguration = head bestComputerConfigurations
+    return (GameState chosenComputerConfiguration (togglePlayer player) difficulty)
+
+isWinnerConfiguration :: [Die] -> Bool
+isWinnerConfiguration [] = False
+isWinnerConfiguration dice
+  | length dice == 1 = getFace (head dice) `elem` [1, 3, 4, 6]
+  | length dice == 2 = getFace (head dice) /= getFace (dice !! 1) && getFace (head dice) + getFace (dice !! 1) /= 7
+  | otherwise = any isWinnerConfiguration (getPairs [x | x <- dice, getFace x `notElem` [2, 5]])
+
+getPairs :: [a] -> [[a]]
+getPairs [] = []
+getPairs (x:xs) = foldl (\acc current -> [x, current]:acc) [] xs ++ getPairs xs
+
+getPossibleConfigurations :: [Die] -> [[Die]]
+getPossibleConfigurations dice = foldl (\acc current -> if getFace current /= 1 then map (\newFace -> rotateDie (getFace current) newFace dice) (possibleRotations current) ++ acc else removeDie dice : acc) [] dice
+
+-- [4, 1, 5]
+
+
+-- [Die 1, Die 2, Die 4, Die 6] (Original)
+
+-- [
+-- ([Die 1, Die 1, Die 4, Die 6], movimento (rotação | remoção)),
+-- ([Die 1, Die 2, Die 3, Die 6], movimento),
+-- ([Die 1, Die 2, Die 2, Die 6], movimento),
+-- ([Die 1, Die 2, Die 1, Die 6], movimento),
+-- ([Die 1, Die 2, Die 4, Die 5], movimento),
+-- ([Die 2, Die 4, Die 5], movimento),
+-- ...
+--]
 
 startGame :: IO ()
 startGame = do
@@ -150,7 +194,7 @@ startGame = do
 
   diceAmount <- readDiceAmount
   randomDice <- rollDice diceAmount
-  
+
   difficulty <- readDifficulty
 
   let gameState = initGameState randomDice difficulty
@@ -178,13 +222,13 @@ gameEventLoop (GameState dice player difficulty) = do
     else do
       setSGR [SetColor Foreground Vivid Red]
       putStrLn "Vez do Computador"
-      
+
       let computerMove = getComputerMove difficulty
       newGameState <- computerMove (GameState dice player difficulty)
 
       putStrLn "O computador finalizou a sua jogada."
       gameEventLoop newGameState
-      
+
 
 
 -- Função para imprimir o estado atual do jogo
