@@ -9,6 +9,7 @@ import System.Console.ANSI
       ColorIntensity(Dull, Vivid),
       ConsoleLayer(Foreground),
       SGR(SetColor) )
+import Data.List (sort, delete, find)
 
 data Player = Person | Computer deriving (Show, Eq)
 data Difficulty = Easy | Hard deriving (Show, Eq)
@@ -146,12 +147,12 @@ computerEasyMove (GameState dice player difficulty) = do
 
 computerHardMove :: GameState -> IO GameState
 computerHardMove (GameState dice player difficulty) = do
-  let faces = foldl (\acc current -> [(map getFace current)] ++ acc) [] (getPossibleConfigurations dice)
-  putStrLn $ "Dados: " ++ show faces
-  
+  -- let faces = foldl (\acc current -> [(map getFace current)] ++ acc) [] (getPossibleConfigurations dice)
+  -- putStrLn $ "Dados: " ++ show faces
+
   let bestComputerConfigurations = filter (\configuration -> not $ isWinnerConfiguration configuration) (getPossibleConfigurations dice)
-  let best = foldl (\acc current -> [(map getFace current)] ++ acc) [] (bestComputerConfigurations)
-  putStrLn $ "Dados: " ++ show best
+  -- let best = foldl (\acc current -> [(map getFace current)] ++ acc) [] (bestComputerConfigurations)
+  -- putStrLn $ "Dados: " ++ show best
 
   if null bestComputerConfigurations then
     computerEasyMove (GameState dice player difficulty)
@@ -164,29 +165,31 @@ isWinnerConfiguration [] = False
 isWinnerConfiguration dice
   | length dice == 1 = getFace (head dice) `elem` [1, 3, 4, 6]
   | length dice == 2 = getFace (head dice) /= getFace (dice !! 1) && getFace (head dice) + getFace (dice !! 1) /= 7
-  | otherwise = any isWinnerConfiguration (getPairs [x | x <- dice, getFace x `notElem` [2, 5]])
+  | otherwise = isWinnerConfiguration $ map (\x -> Die x) (removePairsSummingTo7 $ filterPairs [getFace x | x <- dice, getFace x `notElem` [2, 5]])
 
-getPairs :: [a] -> [[a]]
-getPairs [] = []
-getPairs (x:xs) = foldl (\acc current -> [x, current]:acc) [] xs ++ getPairs xs
+filterPairs :: Ord a => [a] -> [a]
+filterPairs list = filterSortedPairs $ sort list
+
+filterSortedPairs :: Eq a => [a] -> [a]
+filterSortedPairs [] = []
+filterSortedPairs [x] = [x]
+filterSortedPairs (x:y:xs) = if x == y then filterSortedPairs xs else x:filterSortedPairs (y:xs)
+
+removePairsSummingTo7 :: [Int] -> [Int]
+removePairsSummingTo7 [] = []
+removePairsSummingTo7 xs = 
+    case findPair xs of
+        Just (x, y) -> removePairsSummingTo7 (delete x (delete y xs))
+        Nothing     -> xs
+  where
+    findPair [] = Nothing
+    findPair (x:ys) = 
+        case find ((== 7) . (+ x)) ys of
+            Just y  -> Just (x, y)
+            Nothing -> findPair ys
 
 getPossibleConfigurations :: [Die] -> [[Die]]
 getPossibleConfigurations dice = foldl (\acc current -> if getFace current /= 1 then map (\newFace -> rotateDie (getFace current) newFace dice) (possibleRotations current) ++ acc else removeDie dice : acc) [] dice
-
--- [4, 1, 5]
-
-
--- [Die 1, Die 2, Die 4, Die 6] (Original)
-
--- [
--- ([Die 1, Die 1, Die 4, Die 6], movimento (rotação | remoção)),
--- ([Die 1, Die 2, Die 3, Die 6], movimento),
--- ([Die 1, Die 2, Die 2, Die 6], movimento),
--- ([Die 1, Die 2, Die 1, Die 6], movimento),
--- ([Die 1, Die 2, Die 4, Die 5], movimento),
--- ([Die 2, Die 4, Die 5], movimento),
--- ...
---]
 
 startGame :: IO ()
 startGame = do

@@ -1,7 +1,7 @@
 module Die (Die (..), rollDice, possibleRotations, oppositeFace, rotateDie, removeDie, getFace) where
 import System.Random (randomRIO)
 
-data Die = Die Int
+data Die = Die Int deriving (Eq, Ord)
 
 instance Show Die where
   show (Die face) = faceToString face
