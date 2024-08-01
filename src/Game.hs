@@ -3,13 +3,8 @@ module Game (startGame) where
 import Die (Die (..), rollDice, rotateDie, removeDie, getFace, possibleRotations)
 import Text.Read (readMaybe)
 import System.Random (randomRIO)
-import System.Console.ANSI
-    ( setSGR,
-      Color(Yellow, Green, Red),
-      ColorIntensity(Dull, Vivid),
-      ConsoleLayer(Foreground),
-      SGR(SetColor) )
 import Data.List (sort, delete, find)
+import TerminalColor (changeColorByContextSafe, Context(..))
 
 data Player = Person | Computer deriving (Show, Eq)
 data Difficulty = Easy | Hard deriving (Show, Eq)
@@ -165,7 +160,17 @@ isWinnerConfiguration [] = False
 isWinnerConfiguration dice
   | length dice == 1 = getFace (head dice) `elem` [1, 3, 4, 6]
   | length dice == 2 = getFace (head dice) /= getFace (dice !! 1) && getFace (head dice) + getFace (dice !! 1) /= 7
-  | otherwise = isWinnerConfiguration $ map (\x -> Die x) (removePairsSummingTo7 $ filterPairs [getFace x | x <- dice, getFace x `notElem` [2, 5]])
+  | otherwise = isWinnerConfiguration $ map (\x -> Die x) (removePairsSumSeven $ filterPairs [getFace x | x <- dice, getFace x `notElem` [2, 5]])
+
+removePairsSumSeven :: [Int] -> [Int]
+removePairsSumSeven [] = []
+removePairsSumSeven xs = maybe xs (\(x, y) -> removePairsSumSeven $ delete x $ delete y xs) (findPairSumSeven xs)
+
+findPairSumSeven :: [Int] -> Maybe (Int, Int)
+findPairSumSeven [] = Nothing
+findPairSumSeven (x:ys) = do
+  y <- find (\y -> x + y == 7) ys
+  return (x, y)
 
 filterPairs :: Ord a => [a] -> [a]
 filterPairs list = filterSortedPairs $ sort list
@@ -174,19 +179,6 @@ filterSortedPairs :: Eq a => [a] -> [a]
 filterSortedPairs [] = []
 filterSortedPairs [x] = [x]
 filterSortedPairs (x:y:xs) = if x == y then filterSortedPairs xs else x:filterSortedPairs (y:xs)
-
-removePairsSummingTo7 :: [Int] -> [Int]
-removePairsSummingTo7 [] = []
-removePairsSummingTo7 xs = 
-    case findPair xs of
-        Just (x, y) -> removePairsSummingTo7 (delete x (delete y xs))
-        Nothing     -> xs
-  where
-    findPair [] = Nothing
-    findPair (x:ys) = 
-        case find ((== 7) . (+ x)) ys of
-            Just y  -> Just (x, y)
-            Nothing -> findPair ys
 
 getPossibleConfigurations :: [Die] -> [[Die]]
 getPossibleConfigurations dice = foldl (\acc current -> if getFace current /= 1 then map (\newFace -> rotateDie (getFace current) newFace dice) (possibleRotations current) ++ acc else removeDie dice : acc) [] dice
@@ -206,7 +198,7 @@ startGame = do
 gameEventLoop :: GameState -> IO ()
 gameEventLoop (GameState dice player difficulty) = do
   -- Verify End Game
-  endGame <- verifyEndGame (GameState dice player difficulty)
+  let endGame = verifyEndGame (GameState dice player difficulty)
   if endGame
     then putStrLn ("=== Fim de jogo! ====\n  =" ++ show (togglePlayer player) ++ " venceu! =" ++ "\n=====================")
 
@@ -214,7 +206,7 @@ gameEventLoop (GameState dice player difficulty) = do
     printGameState (GameState dice player difficulty)
     if player == Person
       then do
-        setSGR [SetColor Foreground Vivid Green]
+        changeColorByContextSafe PersonContext
 
         selectedDie <- readValidDieChoice (GameState dice player difficulty)
         putStrLn $ show selectedDie
@@ -223,7 +215,7 @@ gameEventLoop (GameState dice player difficulty) = do
         gameEventLoop newGameState
 
     else do
-      setSGR [SetColor Foreground Vivid Red]
+      changeColorByContextSafe ComputerContext
       putStrLn "Vez do Computador"
 
       let computerMove = getComputerMove difficulty
@@ -232,12 +224,10 @@ gameEventLoop (GameState dice player difficulty) = do
       putStrLn "O computador finalizou a sua jogada."
       gameEventLoop newGameState
 
-
-
 -- Função para imprimir o estado atual do jogo
 printGameState :: GameState -> IO ()
 printGameState (GameState dice _ _) = do
-  setSGR [SetColor Foreground Dull Yellow]
+  changeColorByContextSafe SystemContext
   printDiceWithRotations dice
 
 --printDice :: [Die] -> IO ()
@@ -266,5 +256,5 @@ getPossibleRotationsText die = let
   in "Possíveis rotações = " ++ show rotations
 
 -- Função para verificar se o jogo terminou
-verifyEndGame :: GameState -> IO Bool
-verifyEndGame (GameState dice _ _) = return $ length dice == 0
+verifyEndGame :: GameState -> Bool
+verifyEndGame (GameState dice _ _) = length dice == 0

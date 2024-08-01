@@ -27,6 +27,7 @@ library
   exposed-modules:
       Die
       Game
+      TerminalColor
   other-modules:
       Paths_dice_game
   autogen-modules:
