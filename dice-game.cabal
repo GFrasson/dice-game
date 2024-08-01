@@ -27,7 +27,11 @@ library
   exposed-modules:
       Die
       Game
+      IOService
+      Move
+      State
       TerminalColor
+      WinnerStrategy
   other-modules:
       Paths_dice_game
   autogen-modules:
