@@ -17,7 +17,7 @@ readValidDiceAmount :: IO Int
 readValidDiceAmount = do
   diceAmount <- readDiceAmount
 
-  if diceAmount < 2 || diceAmount > 100 then do
+  if diceAmount < 2 || diceAmount > 50 then do
     putStrLn "O numero de dados deve ser um valor de 2 a 100"
     readValidDiceAmount
   else
