@@ -1,6 +1,6 @@
 module Move (handlePersonMove, getComputerMove) where
 
-import Die ( Die, getFace, possibleRotations )
+import Die ( Die (..), getFace, possibleRotations )
 import State
     ( GameState(GameState),
       Difficulty(..),
@@ -41,12 +41,12 @@ handleFaceOneComputer gameState = do
 handleOtherFacesComputer :: Die -> GameState -> IO GameState
 handleOtherFacesComputer selectedDie gameState = do
   let possibleRotationsList = possibleRotations selectedDie
-  
+
   randomIndex <- randomRIO (0, length possibleRotationsList - 1)
   let randomFace = possibleRotationsList !! randomIndex
 
   putStrLn $ "O computador rotacionou um dado de face " ++ show (getFace selectedDie) ++ " para a face " ++ show randomFace
-  
+
   return $ rotateDieInState (getFace selectedDie) randomFace gameState
 
 getComputerMove :: Difficulty -> (GameState -> IO GameState)
@@ -61,7 +61,8 @@ computerEasyMove (GameState dice player difficulty) = do
 
 computerHardMove :: GameState -> IO GameState
 computerHardMove (GameState dice player difficulty) = do
-  let bestComputerConfigurations = filter (\configuration -> not $ isWinnerConfiguration configuration) (getPossibleConfigurations dice)
+  let possibleConfigurations = getPossibleConfigurations dice
+  let bestComputerConfigurations = filter (not . isWinnerConfiguration) possibleConfigurations
 
   if null bestComputerConfigurations then
     computerEasyMove (GameState dice player difficulty)

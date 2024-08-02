@@ -17,7 +17,7 @@ readValidDiceAmount :: IO Int
 readValidDiceAmount = do
   diceAmount <- readDiceAmount
   let minValue = 2
-  let maxValue = 50 
+  let maxValue = 100
 
   if diceAmount < minValue || diceAmount > maxValue then do
     putStrLn $ "O numero de dados deve ser um valor de " ++ show minValue ++ " a " ++ show maxValue
