@@ -1,3 +1,6 @@
+-- Nome: Gabriel Frasson Costa / Matrícula: 202035001
+-- Nome: Pedro Couto... / Matrícula: ...
+
 module Die (Die (..), rollDice, possibleRotations, oppositeFace, rotateDie, removeDie, getFace) where
 import System.Random (randomRIO)
 

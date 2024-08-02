@@ -1,3 +1,6 @@
+-- Nome: Gabriel Frasson Costa / Matrícula: 202035001
+-- Nome: Pedro Couto... / Matrícula: ...
+
 module WinnerStrategy(isWinnerConfiguration, getPossibleConfigurations) where
 
 import Die

@@ -1,3 +1,6 @@
+-- Nome: Gabriel Frasson Costa / Matrícula: 202035001
+-- Nome: Pedro Couto... / Matrícula: ...
+
 module TerminalColor (changeColorByContextSafe, Context(..)) where
 
 import System.IO (stdout)

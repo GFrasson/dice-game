@@ -1,3 +1,6 @@
+-- Nome: Gabriel Frasson Costa / Matrícula: 202035001
+-- Nome: Pedro Couto... / Matrícula: ...
+
 module Game (startGame) where
 
 import TerminalColor (changeColorByContextSafe, Context(..))
