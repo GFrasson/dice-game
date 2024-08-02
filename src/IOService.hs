@@ -16,9 +16,11 @@ import TerminalColor (Context(SystemContext), changeColorByContextSafe)
 readValidDiceAmount :: IO Int
 readValidDiceAmount = do
   diceAmount <- readDiceAmount
+  let minValue = 2
+  let maxValue = 50 
 
-  if diceAmount < 2 || diceAmount > 50 then do
-    putStrLn "O numero de dados deve ser um valor de 2 a 100"
+  if diceAmount < minValue || diceAmount > maxValue then do
+    putStrLn $ "O numero de dados deve ser um valor de " ++ show minValue ++ " a " ++ show maxValue
     readValidDiceAmount
   else
     return diceAmount
