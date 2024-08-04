@@ -25,7 +25,11 @@ data GameState = GameState {
 }
 
 initGameState :: [Die] -> Difficulty -> GameState
-initGameState randomDice difficulty = GameState {diceTable = randomDice, currentPlayer = Person, currentDifficulty = difficulty}
+initGameState randomDice difficulty = GameState {
+  diceTable = randomDice,
+  currentPlayer = if difficulty == Easy then Person else Computer,
+  currentDifficulty = difficulty
+}
 
 rotateDieInState :: Int -> Int -> GameState -> GameState
 rotateDieInState oldFace newFace (GameState dice player difficulty) =
