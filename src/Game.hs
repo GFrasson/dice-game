@@ -22,17 +22,22 @@ startGame :: IO ()
 startGame = do
   putStrLn "---- Jogo de dados ----"
 
+  -- Obtém os número de dados desejados pelo usuário
   diceAmount <- readValidDiceAmount
+
+  -- Gera os dados aleatórios
   randomDice <- rollDice diceAmount
 
+  -- Configura a dificuldade desejada pelo usuário
   difficulty <- readDifficulty
 
+  -- Inicializa o estado do jogo
   let gameState = initGameState randomDice difficulty
   gameEventLoop gameState
 
+-- Loop principal do jogo
 gameEventLoop :: GameState -> IO ()
 gameEventLoop (GameState dice player difficulty) = do
-  -- Verify End Game
   let endGame = verifyEndGame (GameState dice player difficulty)
   if endGame
     then printEndGame (togglePlayer player)
@@ -59,6 +64,6 @@ gameEventLoop (GameState dice player difficulty) = do
       putStrLn "O computador finalizou a sua jogada."
       gameEventLoop newGameState
 
--- Função para verificar se o jogo terminou
+-- Verifica se o jogo terminou, retornando True se não houver dados restantes no estado atual do jogo.
 verifyEndGame :: GameState -> Bool
 verifyEndGame (GameState dice _ _) = length dice == 0
