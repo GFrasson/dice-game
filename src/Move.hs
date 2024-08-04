@@ -64,11 +64,19 @@ computerEasyMove (GameState dice player difficulty) = do
 
 computerHardMove :: GameState -> IO GameState
 computerHardMove (GameState dice player difficulty) = do
-  let possibleConfigurations = getPossibleConfigurations dice
-  let bestComputerConfigurations = filter (not . isWinnerConfiguration) possibleConfigurations
+  let bestComputerConfigurations = filter (\configuration -> not $ isWinnerConfiguration configuration) (getPossibleConfigurations dice)
 
   if null bestComputerConfigurations then
     computerEasyMove (GameState dice player difficulty)
   else do
     let chosenComputerConfiguration = head bestComputerConfigurations
-    return (GameState chosenComputerConfiguration (togglePlayer player) difficulty)
+    let chosenDieFaces = map getFace dice
+    let newDieFaces = map getFace chosenComputerConfiguration
+
+    if length newDieFaces < length chosenDieFaces then do
+      putStrLn "O computador removeu um dado."
+      return (GameState chosenComputerConfiguration (togglePlayer player) difficulty)
+    else do
+      let (changedDie, newFace) = head [(die, newFace) | (die, newFace) <- zip dice newDieFaces, getFace die /= newFace]
+      putStrLn $ "O computador rotacionou um dado de face " ++ show (getFace changedDie) ++ " para a face " ++ show newFace
+      return (GameState chosenComputerConfiguration (togglePlayer player) difficulty)
